@@ -30,3 +30,40 @@ Ten complaints about an LLM system. For each: the lever, the cheapest interventi
 
 - **Row 1 is the trap.** "It hallucinates → the weights are wrong" is the field's most expensive instinct. It's almost always a *retrieval* failure (the right fact was never in context) compounded by a *scoring* failure (Stage 4: the industry rewards guessing over abstaining). Fix both cheaply before you ever touch a weight.
 - **Row 10 is the one legitimate weights case**, and it's still gated: only pull it once your Stage 4 eval set shows that context and RAG genuinely cannot carry the behavior. Persistent *style/behavior* that survives good prompting is what weights are for — persistent *facts* never are (that's row 2).
+
+---
+
+## Tokenizer forensics (Stage 1A)
+
+Domain: Vietnamese maritime law, 10 VI/EN sentence pairs. Ratio = VI tokens ÷ EN tokens (special tokens excluded), averaged over all 10. **Effective context = advertised window ÷ ratio** — the real token budget for Vietnamese content.
+
+*Run `stage1/tokenizer_ratio.py` and paste the printed numbers below.*
+
+| Date | Model | vocab | mean VI/EN ratio | advertised ctx | effective ctx (adv ÷ ratio) |
+|------|-------|-------|------------------|----------------|------------------------------|
+| _TBD_ | Qwen/Qwen3-8B | _TBD_ | _TBD_ | 32,768 | _TBD_ |
+| _TBD_ | meta-llama/Llama-3.1-8B-Instruct | _TBD_ | _TBD_ | 131,072 | _TBD_ |
+| _TBD_ | google/gemma-3-12b-it | _TBD_ | _TBD_ | 131,072 | _TBD_ |
+| _TBD_ | mistralai/Mistral-Small-3.2-24B-Instruct-2506 | _TBD_ | _TBD_ | 131,072 | _TBD_ |
+
+**Diacritics observation (fill after the token-by-token decode):** _where do the Vietnamese dấu land — split onto their own byte tokens, or fragmenting syllables? TBD._
+
+**Pass:** a per-model ratio exists, and I can state the effective context window for each candidate. _TBD once run._
+
+---
+
+## VRAM predicted vs actual (Stage 1B)
+
+Config (`n_layers`, `num_key_value_heads`, `head_dim`) pulled from each model's `config.json`. Predicted = `vram_calc.py`; measured = `nvidia-smi` while the model is loaded at the same quant + ctx. **Pass = predicted within 20% of measured for all three.**
+
+Settings: quant=q4, ctx=32,768, overhead=2.0 GB. *(Adjust to what you actually run.)*
+
+| Date | Model | quant | ctx | predicted GB | measured GB (nvidia-smi) | Δ% | within 20%? |
+|------|-------|-------|-----|--------------|--------------------------|----|-------------|
+| _TBD_ | meta-llama/Llama-3.1-8B-Instruct | q4 | 32,768 | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| _TBD_ | Qwen/Qwen3-8B | q4 | 32,768 | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| _TBD_ | mistralai/Mistral-Small-3.2-24B-Instruct-2506 | q4 | 32,768 | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+
+**Overhead note:** started at the assignment's 1.0 GB; _if consistently low vs nvidia-smi, raise it (CUDA context + activations + framework) and record the value used. TBD._
+
+**tok/s ceilings (memory-bound, = bandwidth ÷ weights GB):** _paste per-hardware figures once run. TBD._
